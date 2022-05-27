@@ -8,29 +8,10 @@ from ninja import ModelSchema
 
 from main.services import HabrParser
 from main.models import Purchase, MonthlyCost
+from main.schemas import PurchaseSchema, MonthlyCostSchema, ArticleOutput
 
 
 api = NinjaAPI()
-
-
-class ArticleOutput(Schema):
-    link: str
-    voices: str
-    views: str
-    bookmarks: int
-    comments: int
-
-
-class PurchaseSchema(ModelSchema):
-    class Config:
-        model = Purchase
-        model_fields = ['name', 'cost', 'bought_at']
-
-
-class MonthlyCostSchema(ModelSchema):
-    class Config:
-        model = MonthlyCost
-        model_fields = ['month_number', 'year', 'spent']
 
 
 @api.get('/best_weekly_articles/',
@@ -70,6 +51,5 @@ def get_month_total(request, month_number: int, year: int):
 def get_month_purchases(request, month_number: int, year: int):
     return Purchase.objects.filter(month_number=month_number, year=year)
 
-# TODO вынести схемы в отдельный файл
 # required False у параметров посмотреть (можно ли сделать это как-то без фильтров)
 # посмотреть что быстрее работает (брать месяц и год из даты, которая придёт или их отправлять с клиента)

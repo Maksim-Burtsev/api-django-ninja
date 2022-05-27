@@ -1,9 +1,17 @@
-from typing import Optional
-from dataclasses import dataclass
-
+from typing import NamedTuple
+from enum import Enum
+from django.forms import ValidationError
 
 import requests
 from bs4 import BeautifulSoup
+
+
+class ArticleTuple(NamedTuple):
+    link: str
+    voices: str
+    views: str
+    bookmarks: str
+    comments: str
 
 
 class HabrParser:
@@ -11,7 +19,7 @@ class HabrParser:
     def __init__(self, url: str) -> None:
         self.url = url
 
-    def _get_page_html(self) -> Optional[str]:
+    def _get_page_html(self) -> str:
         """
         Парсит html-страницу
         """
@@ -20,7 +28,7 @@ class HabrParser:
             return response.text
         return None
 
-    def _get_articles_from_html(self, html_page) -> list[BeautifulSoup]:
+    def _get_articles_from_html(self, html_page: str) -> list[BeautifulSoup]:
         """
         Достаёт с html-страницы все статьи
         """
@@ -32,7 +40,7 @@ class HabrParser:
 
         return article_list
 
-    def _clean_articles_data(self, article_list) -> list[tuple[str]]:
+    def _clean_articles_data(self, article_list) -> list[ArticleTuple]:
         """
         Очищает данные статьи от html
         text
@@ -40,31 +48,41 @@ class HabrParser:
         clean_data = []
 
         for article in article_list:
-            link = 'https://habr.com' + \
-                article.find('a', {'class': BlockClassName.link}).get('href')
-
-            voices = article.find('span', {
-                                  'class': BlockClassName.voices}).text.strip()
-            views = article.find(
-                'span', {'class': BlockClassName.views}).text.strip()
-
-            bookmarks = article.find(
-                'span', {'class': BlockClassName.bookmarks}).text.strip()
-
-            comments = article.find(
-                'span', {'class': BlockClassName.comments}).text.strip()
-
-            clean_data.append({
-                'link': link,
-                'voices': voices,
-                'views': views,
-                'bookmarks':  bookmarks,
-                'comments': comments
-            })
+            try:
+                article_data = self._parse_article(article)
+            except ValidationError:
+                print(article)
+            else:
+                clean_data.append(article_data)
 
         return clean_data
 
-    def get_articles_data(self) -> list[tuple[str]]:
+    def _parse_article(self, article: BeautifulSoup) -> ArticleTuple:
+        """
+        Парсит данные из статьи
+        """
+        try:
+            link = 'https://habr.com' + \
+                article.find('a', {'class': ClassName.LINK.value}).get('href')
+
+            voices = article.find('span', {
+                'class': ClassName.VOICES.value}).text.strip()
+            views = article.find(
+                'span', {'class': ClassName.VIEWS.value}).text.strip()
+
+            bookmarks = article.find(
+                'span', {'class': ClassName.BOOKMARKS.value}).text.strip()
+
+            comments = article.find(
+                'span', {'class': ClassName.COMMENTS.value}).text.strip()
+        except:
+            raise ValidationError('Это не статья')
+        else:
+            article = ArticleTuple(link=link, voices=voices,
+                                   views=views, bookmarks=bookmarks, comments=comments)
+            return article
+
+    def get_articles_data(self) -> list[ArticleTuple]:
         """
         Возвращает список кортежей, которые содержат инфомарцию о каждой статье на странице
         """
@@ -75,23 +93,20 @@ class HabrParser:
         return data
 
 
-@dataclass(frozen=True)
-class BlockClassName:
-
-    link: str = 'tm-article-snippet__title-link'
-
-    voices: str = 'tm-votes-meter__value tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_appearance-article tm-votes-meter__value_rating'
-
-    views: str = 'tm-icon-counter__value'
-
-    bookmarks: str = 'bookmarks-button__counter'
-
-    comments: str = 'tm-article-comments-counter-link__value'
+class ClassName(Enum):
+    LINK = 'tm-article-snippet__title-link'
+    VOICES = 'tm-votes-meter__value tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_appearance-article tm-votes-meter__value_rating'
+    VIEWS = 'tm-icon-counter__value'
+    BOOKMARKS = 'bookmarks-button__counter'
+    COMMENTS = 'tm-article-comments-counter-link__value'
 
 
 if __name__ == '__main__':
-    parser = HabrParser('https://habr.com/ru/top/weekly/')
-    data = parser.get_articles_data()
+    parser = HabrParser('https://habr.com/ru/top/daily/')
+    html_page = parser._get_page_html()
 
-    for i in (data):
-        print(i)
+    articles = parser._get_articles_from_html(html_page)
+    parser.get_articles_data()
+
+#TODO тесты
+#exceptions
