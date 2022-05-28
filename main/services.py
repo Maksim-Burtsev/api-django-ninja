@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import NamedTuple
 
-from django.forms import ValidationError
 from django.utils import timezone
 
 import requests
@@ -13,7 +12,10 @@ class MonthYearTuple(NamedTuple):
     year: int
 
 
-def _get_month_and_year() -> MonthYearTuple:
+def _get_current_month_and_year() -> MonthYearTuple:
+    """
+    Возвращает текущий год и месяц
+    """
     today = timezone.now()
     month_number = today.month
     year = today.year
@@ -42,7 +44,7 @@ class HabrParser:
     def __init__(self, url: str) -> None:
         self.url = url
 
-    def _get_page_html(self) -> str:
+    def _get_page_html(self) -> str | None:
         """
         Парсит html-страницу
         """
@@ -73,7 +75,7 @@ class HabrParser:
         for article in article_list:
             try:
                 article_data = self._parse_article(article)
-            except ValidationError:
+            except ValueError:
                 print(article.find('h2').text)
             else:
                 clean_data.append(article_data)
@@ -99,29 +101,28 @@ class HabrParser:
             comments = article.find(
                 'span', {'class': ClassName.COMMENTS.value}).text.strip()
         except:
-            raise ValidationError('Это не статья')
+            raise ValueError('Это не статья')
         else:
             article = ArticleTuple(link=link, voices=voices,
                                    views=views, bookmarks=bookmarks, comments=comments)
             return article
 
-    def get_articles_data(self) -> list[ArticleTuple]:
+    def get_articles_data(self) -> list[ArticleTuple] | None:
         """
         Возвращает список кортежей, которые содержат инфомарцию о каждой статье на странице
         """
         html_page = self._get_page_html()
-        articles = self._get_articles_from_html(html_page)
-        data = self._clean_articles_data(articles)
-
-        return data
+        if html_page:
+            articles = self._get_articles_from_html(html_page)
+            data = self._clean_articles_data(articles)
+            return data
+        return None
 
 
 if __name__ == '__main__':
     parser = HabrParser('https://habr.com/ru/top/daily/')
-    html_page = parser._get_page_html()
-
-    articles = parser._get_articles_from_html(html_page)
-    parser.get_articles_data()
+    data = parser.get_articles_data()
+    print(len(data))
 
 # TODO тесты
-# exceptions
+# exceptions (import в if __name__ == '__main__')

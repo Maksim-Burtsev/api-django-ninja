@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class MonthlyCost(models.Model):
@@ -20,9 +22,15 @@ class Purchase(models.Model):
     """
     Покупка
     """
+    @staticmethod
+    def validate_bought_at(value):
+        date_now = timezone.now().date()
+        if value > date_now:
+            raise ValidationError('Date can be in the future!')
+
     name = models.CharField(max_length=255)
     cost = models.IntegerField()
-    bought_at = models.DateField()
+    bought_at = models.DateField(validators=[validate_bought_at])
     month_number = models.IntegerField(blank=True, null=True)
     year = models.IntegerField(blank=True, null=True)
 
@@ -36,5 +44,3 @@ class Purchase(models.Model):
 
     class Meta:
         ordering = ['-bought_at', '-cost']
-
-#TODO валидатор на дату

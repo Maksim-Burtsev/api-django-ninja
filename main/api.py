@@ -4,7 +4,7 @@ from django.db.models import F
 
 from ninja import NinjaAPI
 
-from main.services import HabrParser, _get_month_and_year
+from main.services import HabrParser, _get_current_month_and_year
 from main.models import Purchase, MonthlyCost
 from main.schemas import PurchaseSchema, MonthlyCostSchema, ArticleOutput
 
@@ -63,7 +63,7 @@ def get_month_purchases(request, month_number: int = None, year: int = None):
     Список покупок за месяц и год
     """
     if month_number is None and year is None:
-        month_number, year = _get_month_and_year()
+        month_number, year = _get_current_month_and_year()
         return Purchase.objects.filter(month_number=month_number, year=year)
 
     result = Purchase.objects.all()
