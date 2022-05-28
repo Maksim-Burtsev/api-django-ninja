@@ -6,6 +6,7 @@ from main.models import MonthlyCost, Purchase
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
     list_display = ('name', 'get_cost_with_p', 'bought_at')
+    fields = ('name', 'cost', 'bought_at')
 
     def get_cost_with_p(self, obj):
         return f'{obj.cost} p.'

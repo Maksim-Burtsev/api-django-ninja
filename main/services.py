@@ -1,9 +1,24 @@
-from typing import NamedTuple
 from enum import Enum
+from typing import NamedTuple
+
 from django.forms import ValidationError
+from django.utils import timezone
 
 import requests
 from bs4 import BeautifulSoup
+
+
+class MonthYearTuple(NamedTuple):
+    month_number: int
+    year: int
+
+
+def _get_month_and_year() -> MonthYearTuple:
+    today = timezone.now()
+    month_number = today.month
+    year = today.year
+
+    return MonthYearTuple(month_number=month_number, year=year)
 
 
 class ArticleTuple(NamedTuple):
@@ -12,6 +27,14 @@ class ArticleTuple(NamedTuple):
     views: str
     bookmarks: str
     comments: str
+
+
+class ClassName(Enum):
+    LINK = 'tm-article-snippet__title-link'
+    VOICES = 'tm-votes-meter__value tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_appearance-article tm-votes-meter__value_rating'
+    VIEWS = 'tm-icon-counter__value'
+    BOOKMARKS = 'bookmarks-button__counter'
+    COMMENTS = 'tm-article-comments-counter-link__value'
 
 
 class HabrParser:
@@ -51,7 +74,7 @@ class HabrParser:
             try:
                 article_data = self._parse_article(article)
             except ValidationError:
-                print(article)
+                print(article.find('h2').text)
             else:
                 clean_data.append(article_data)
 
@@ -93,14 +116,6 @@ class HabrParser:
         return data
 
 
-class ClassName(Enum):
-    LINK = 'tm-article-snippet__title-link'
-    VOICES = 'tm-votes-meter__value tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_appearance-article tm-votes-meter__value_rating'
-    VIEWS = 'tm-icon-counter__value'
-    BOOKMARKS = 'bookmarks-button__counter'
-    COMMENTS = 'tm-article-comments-counter-link__value'
-
-
 if __name__ == '__main__':
     parser = HabrParser('https://habr.com/ru/top/daily/')
     html_page = parser._get_page_html()
@@ -108,5 +123,5 @@ if __name__ == '__main__':
     articles = parser._get_articles_from_html(html_page)
     parser.get_articles_data()
 
-#TODO тесты
-#exceptions
+# TODO тесты
+# exceptions

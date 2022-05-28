@@ -35,4 +35,6 @@ class Purchase(models.Model):
         return super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ['-bought_at', ]
+        ordering = ['-bought_at', '-cost']
+
+#TODO валидатор на дату
