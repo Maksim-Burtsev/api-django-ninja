@@ -7,20 +7,16 @@ import requests
 from bs4 import BeautifulSoup
 
 
+class ParseArticleError(Exception):
+    """
+    Ошибка при парсинге статьи
+    """
+    pass
+
+
 class MonthYearTuple(NamedTuple):
     month_number: int
     year: int
-
-
-def _get_current_month_and_year() -> MonthYearTuple:
-    """
-    Возвращает текущий год и месяц
-    """
-    today = timezone.now()
-    month_number = today.month
-    year = today.year
-
-    return MonthYearTuple(month_number=month_number, year=year)
 
 
 class ArticleTuple(NamedTuple):
@@ -37,6 +33,17 @@ class ClassName(Enum):
     VIEWS = 'tm-icon-counter__value'
     BOOKMARKS = 'bookmarks-button__counter'
     COMMENTS = 'tm-article-comments-counter-link__value'
+
+
+def _get_current_month_and_year() -> MonthYearTuple:
+    """
+    Возвращает текущий год и месяц
+    """
+    today = timezone.now()
+    month_number = today.month
+    year = today.year
+
+    return MonthYearTuple(month_number=month_number, year=year)
 
 
 class HabrParser:
@@ -75,7 +82,7 @@ class HabrParser:
         for article in article_list:
             try:
                 article_data = self._parse_article(article)
-            except ValueError:
+            except ParseArticleError:
                 print(article.find('h2').text)
             else:
                 clean_data.append(article_data)
@@ -101,7 +108,7 @@ class HabrParser:
             comments = article.find(
                 'span', {'class': ClassName.COMMENTS.value}).text.strip()
         except:
-            raise ValueError('Это не статья')
+            raise ParseArticleError('Это не статья')
         else:
             article = ArticleTuple(link=link, voices=voices,
                                    views=views, bookmarks=bookmarks, comments=comments)
@@ -123,6 +130,3 @@ if __name__ == '__main__':
     parser = HabrParser('https://habr.com/ru/top/daily/')
     data = parser.get_articles_data()
     print(len(data))
-
-# TODO тесты
-# exceptions (import в if __name__ == '__main__')
