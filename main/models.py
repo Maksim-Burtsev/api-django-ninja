@@ -9,7 +9,7 @@ class MonthlyCost(models.Model):
     """
     month_number = models.IntegerField()
     year = models.IntegerField()
-    spent = models.IntegerField()
+    spent = models.IntegerField(default=0, blank=True, null=True)
 
     def __str__(self) -> str:
         return f'{self.month_number}/{self.year} total: {self.spent} p.'
@@ -18,15 +18,16 @@ class MonthlyCost(models.Model):
         unique_together = ['month_number', 'year']
 
 
+def validate_bought_at(value):
+    date_now = timezone.now().date()
+    if value > date_now:
+        raise ValidationError('Date can be in the future!')
+
+
 class Purchase(models.Model):
     """
     Покупка
     """
-    @staticmethod
-    def validate_bought_at(value):
-        date_now = timezone.now().date()
-        if value > date_now:
-            raise ValidationError('Date can be in the future!')
 
     name = models.CharField(max_length=255)
     cost = models.IntegerField()
@@ -38,6 +39,7 @@ class Purchase(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        self.name = self.name.capitalize()
         self.month_number = self.bought_at.month
         self.year = self.bought_at.year
         return super().save(*args, **kwargs)

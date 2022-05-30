@@ -3,6 +3,7 @@ from typing import List
 from django.db.models import F
 
 from ninja import NinjaAPI
+from pytz import timezone
 
 from main.services import HabrParser, _get_current_month_and_year
 from main.models import Purchase, MonthlyCost
@@ -33,7 +34,8 @@ def get_daily_articles(request):
     return data
 
 
-@api.post('/add_purchase/')
+@api.post('/add_purchase/', url_name='add_purchase',
+          response={201: PurchaseSchema})
 def add_purchase(request, purchase: PurchaseSchema):
     """
     Добавление покупки
@@ -46,29 +48,26 @@ def add_purchase(request, purchase: PurchaseSchema):
     monthly_cost.spent = F('spent') + purchase.cost
     monthly_cost.save()
 
-    return {'detail': 'created'}
+    return 201, purchase
 
 
-@api.get('/month_total/', response=MonthlyCostSchema)
-def get_month_total(request, month_number: int, year: int):
+@api.get('/month_total/', response=MonthlyCostSchema, url_name='month_total')
+def get_month_total(request, month_number: int = None, year: int = None):
     """
     Сумма покупок за конкретный месяц и год
     """
+    if month_number is None or year is None:
+        month_number, year = _get_current_month_and_year()
+
     return MonthlyCost.objects.get(month_number=month_number, year=year)
 
 
-@api.get('/get_month_purchases/', response=List[PurchaseSchema])
+@api.get('/month_purchases/', response=List[PurchaseSchema],
+         url_name='month_purchases')
 def get_month_purchases(request, month_number: int = None, year: int = None):
     """
     Список покупок за месяц и год
     """
-    if month_number is None and year is None:
+    if month_number is None or year is None:
         month_number, year = _get_current_month_and_year()
-        return Purchase.objects.filter(month_number=month_number, year=year)
-
-    result = Purchase.objects.all()
-    if month_number:
-        result = result.filter(month_number=month_number)
-    if year:
-        result = result.filter(year=year)
-    return result
+    return Purchase.objects.filter(month_number=month_number, year=year)
