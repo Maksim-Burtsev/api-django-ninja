@@ -3,7 +3,6 @@ from typing import List
 from django.db.models import F
 
 from ninja import NinjaAPI
-from pytz import timezone
 
 from main.services import HabrParser, _get_current_month_and_year
 from main.models import Purchase, MonthlyCost
