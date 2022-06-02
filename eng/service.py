@@ -19,16 +19,18 @@ class SentenceParser:
     def get_sentences(self) -> list[str]:
         html_page = self._get_html_page_soup()
         block_with_sentences = self._get_sentences_block_from_page(html_page)
-        sentences_list = parser._get_clean_sentences(block_with_sentences)
+        sentences_list = self._get_clean_sentences(block_with_sentences)
 
         return sentences_list
 
     def _get_html_page_soup(self) -> BeautifulSoup:
         response = requests.get(
             self.link, headers={'user-agent': self.user_agent})
+        if response.status_code != 200:
+            response = requests.get(
+                self.backup_link, headers={'user-agent': self.user_agent})
         if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'lxml')
-            return soup
+            return BeautifulSoup(response.text, 'lxml')
         raise Exception('Parse problem')
 
     def _get_sentences_block_from_page(self, raw_html: BeautifulSoup) -> BeautifulSoup:

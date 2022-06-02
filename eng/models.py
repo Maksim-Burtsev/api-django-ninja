@@ -5,7 +5,7 @@ class Word(models.Model):
     """
     Word with transcription
     """
-    word = models.CharField(max_length=255)
+    word = models.CharField(max_length=255, unique=True)
     transcription = models.CharField(max_length=255)
 
     def __str__(self) -> str:
