@@ -11,6 +11,12 @@ class Word(models.Model):
     def __str__(self) -> str:
         return self.word
 
+    def save(self, *args, **kwargs):
+        self.word = self.word.lower()
+        self.transcription = self.transcription.lower()
+        
+        return super().save(*args, **kwargs)
+
 
 class Sentence(models.Model):
     """
