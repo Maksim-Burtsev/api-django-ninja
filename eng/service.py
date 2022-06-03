@@ -4,9 +4,28 @@ import requests
 import fake_useragent
 from bs4 import BeautifulSoup
 
+from eng.models import Sentence, Word
+
 
 DEFAULT_LINK = 'https://www.manythings.org/sentences/words/{}/2.html'
 BACKUP_LINK = 'https://www.manythings.org/sentences/words/{}/1.html'
+
+
+class GetSentencesError(Exception):
+    """
+    Ошибка получения предложений
+    """
+    pass
+
+
+def parse_and_add_sentences(word: Word) -> None:
+    if len(word.word.split()) == 1:
+        parser = SentenceParser(word.word)
+        sentences = parser.get_sentences()
+        if sentences:
+            objects = [Sentence(text=sentence, word=word)
+                       for sentence in sentences]
+            Sentence.objects.bulk_create(objects)
 
 
 class SentenceParser:
@@ -16,9 +35,13 @@ class SentenceParser:
         self.link = DEFAULT_LINK.format(word)
         self.backup_link = BACKUP_LINK.format(word)
 
-    def get_sentences(self) -> list[str]:
-        html_page = self._get_html_page_soup()
-        block_with_sentences = self._get_sentences_block_from_page(html_page)
+    def get_sentences(self) -> list[str] | None:
+        try:
+            html_page = self._get_html_page_soup()
+        except GetSentencesError:
+            return None
+        block_with_sentences = self._get_sentences_block_from_page(
+            html_page)
         sentences_list = self._get_clean_sentences(block_with_sentences)
 
         return sentences_list
@@ -31,7 +54,7 @@ class SentenceParser:
                 self.backup_link, headers={'user-agent': self.user_agent})
         if response.status_code == 200:
             return BeautifulSoup(response.text, 'lxml')
-        raise Exception('Parse problem')
+        raise GetSentencesError
 
     def _get_sentences_block_from_page(self, raw_html: BeautifulSoup) -> BeautifulSoup:
         pre = raw_html.find('pre')
@@ -44,12 +67,8 @@ class SentenceParser:
 
         sentences = []
         for sentence in clean_text.split('\n'):
-            try:
-                sentence = self.__sentence_without_author(sentence)
-            except Exception:
-                # TODO custom exception
-                pass
-            else:
+            sentence = self.__sentence_without_author(sentence)
+            if sentence:
                 sentences.append(sentence)
 
         return sentences
@@ -66,14 +85,14 @@ class SentenceParser:
 
         return result
 
-    def __sentence_without_author(self, sentence: str) -> str:
+    def __sentence_without_author(self, sentence: str | None) -> str | None:
         if sentence:
             for i in range(len(sentence)):
                 if sentence[i] in ['.', '?', '!']:
                     end_index = i+1
                     break
             return sentence[:end_index]
-        raise Exception('Empty sentence')
+        return None
 
 
 if __name__ == '__main__':

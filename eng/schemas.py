@@ -5,6 +5,10 @@ from ninja import Schema, ModelSchema
 from eng.models import Word
 
 
+class Message(Schema):
+    message: str
+
+
 class WordSchema(ModelSchema):
     class Config:
         model = Word
