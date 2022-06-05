@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
 
 from eng.models import Word
-from eng.service import parse_and_add_sentences
+from eng.services import parse_and_add_sentences
 from eng.schemas import WordSchema, WordDetailSchema, Message
 
 

@@ -19,6 +19,9 @@ class GetSentencesError(Exception):
 
 
 def parse_and_add_sentences(word: Word) -> None:
+    """
+    Парсит предложения и в случае успеха добавляет их в базу данных
+    """
     if len(word.word.split()) == 1:
         parser = SentenceParser(word.word)
         sentences = parser.get_sentences()
@@ -29,6 +32,9 @@ def parse_and_add_sentences(word: Word) -> None:
 
 
 class SentenceParser:
+    """
+    Парсер предложений 
+    """
 
     def __init__(self, word: str) -> None:
         self.user_agent = fake_useragent.UserAgent().random
